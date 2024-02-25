@@ -11,6 +11,10 @@ SQLEXPRESS (SQL Server 11.0.6020)
 ### Instalace
 
 Nuget-Packages:<br>
+<b>Client:</b><br>
+Microsoft.AspNetCore.SignalR.Client
+
+<b>Server:</b><br>
 Microsoft.AspNetCore.Authentication.Negotiate v7.0.2<br>
 Microsoft.AspNetCore.Components.WebAssembly.Server v7.0.2<br>
 Microsoft.EntityFrameworkCore v7.0.16<br>
