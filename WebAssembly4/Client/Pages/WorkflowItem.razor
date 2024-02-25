@@ -1,0 +1,53 @@
+﻿@using TaskEvidence.Helpers
+@using TaskEvidence.Models
+@using TaskEvidence.Pages.ServiceDesk
+<!-- Dynamic Item -->
+@inherits WorkflowItemBase
+<form style="border: 1px solid black; padding: 10px;margin-top: 10px;">
+    <div style="display: flex; align-items: center; margin-right: 10px;">
+        <div class="form-group" style="margin-left: 10px">
+            <label for="stepName" style="font-weight: bold;">#@(ChecklistModel.Index + 1)</label>
+        </div>
+        <div class="form-group" style="margin-left: 10px">
+            <input type="text" class="form-control form-control-sm" disabled="@IsReadOnly" @bind="ChecklistModel.StepName" />
+        </div>
+        <div class="form-group" style="margin-left: 10px">
+            <button name="btnDescription" type="button" class="btn btn-primary btn-sm" @onclick="ToggleDescription">@BtnDescription</button>
+        </div>
+        <div class="form-group" style="margin-left: 10px">
+            <label style="font-weight: bold;">Priorita</label>
+        </div>
+        <div class="form-group" style="margin-left: 10px">
+            <select class="form-select form-select-sm select" @bind="ChecklistModel.Priority" disabled="@IsReadOnly">
+                @foreach (var priority in Enum.GetValues(typeof(Priority)))
+                {
+                    <option value="@priority">@priority.ToString()</option>
+                }
+            </select>
+        </div>
+        <div class="form-group" style="margin-left: 10px">
+            <label for="deadline" style="font-weight: bold;">Termín:</label>
+        </div>
+        <div class="form-group" style="margin-left: 10px">
+            <input type="date" class="form-control form-control-sm" min="@DateTime.Now.ToString("yyyy-MM-dd")" @bind="ChecklistModel.Deadline" disabled="@IsReadOnly" />
+        </div>
+        @if(IsStatusVisible)
+        {
+            <div class="form-group" style="margin-left: 10px">
+                <select class="form-select form-select-sm select" @bind="ChecklistModel.Status" disabled="@IsReadOnly">
+                    @foreach (var status in Enum.GetValues(typeof(Status)))
+                    {
+                        <option value="@status">@status.ToString()</option>
+                    }
+                </select>   
+            </div>
+        }
+    </div>
+    @if (ChecklistModel.ShowDescription)
+    {
+        <div class="form-group" style="margin-left: 20px;">
+            <label for="description2" style="font-weight: bold;">Popis:</label>
+            <textarea class="form-control form-control-sm" rows="2" @bind="ChecklistModel.Description" disabled="@IsReadOnly"></textarea>
+        </div>
+    }
+</form>

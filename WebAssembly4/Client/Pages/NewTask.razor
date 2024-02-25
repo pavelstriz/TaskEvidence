@@ -1,0 +1,220 @@
+﻿@page "/newtask"
+@using System.Security.Claims
+@using TaskEvidence.Helpers
+@using TaskEvidence.Models
+@using TaskEvidence.Shared.Models
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IConfiguration Configuration
+
+
+<PageTitle>Nový úkol</PageTitle>
+
+<h2>Nový úkol</h2>
+<div class="container d-flex justify-content-between">
+    <EditForm Model="newTask" style="width: 35%;" OnValidSubmit="AddTask" method="post" enctype="multipart/form-data">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="description" style="font-weight: bold;">Požadavek:</label>
+            <textarea class="form-control form-control-sm" rows="2" @bind="newTask.Description"></textarea>
+            <ValidationMessage For="@(() => newTask.Description)" />
+        </div>
+        <div class="form-group">
+            <label for="orderer" style="font-weight: bold;">Zadavatel:</label>
+            <input type="text" class="form-control form-control-sm" @bind="newTask.Orderer" readonly />
+        </div>
+        <div class="form-group">
+            <label for="name" style="font-weight: bold;">Společnost:</label>
+            <select class="form-select form-select-sm select" @bind="newTask.Company">
+                @if (companies != null)
+                {
+                    @foreach (var company in companies)
+                    {
+                        <option value="@company.Name">@company.Name</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="solver" style="font-weight: bold;">Řešitel:</label>
+            <input type="text" class="form-control form-control-sm" @bind="newTask.Solver" />
+            <ValidationMessage For="@(() => newTask.Solver)" />
+        </div>
+        <div class="form-group">
+            <label for="priority" style="font-weight: bold;">Priorita:</label>
+            <select class="form-select form-select-sm select" @bind="newTask.Priority">
+                @foreach (var priority in Enum.GetValues(typeof(Priority)))
+                {
+                    <option value="@priority">@priority.ToString()</option>
+                }
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="deadline" style="font-weight: bold;">Termín:</label>
+            <input type="date" class="form-control form-control-sm" min="@DateTime.Now.ToString("yyyy-MM-dd")" @bind="newTask.Deadline" />
+            <ValidationMessage For="@(() => newTask.Deadline)" />
+        </div>
+        <div class="form-group mt-3">
+            <label for="file" class="col-sm-6 col-form-label" style="font-weight: bold;">Nahrát soubory:</label>
+            <div class="form-group" style="display: flex; justify-content: space-between;">
+                <InputFile type="file" class="form-control-file" id="file" name="file" OnChange="@HandleFileChange" multiple />
+                <button type="submit" class="btn btn-primary btn-sm float-right">Uložit</button>
+            </div>
+        </div>
+    </EditForm>
+    
+    <div style="width: 3%;"></div>
+    <div style="width: 62%;">
+        <h3>Checklist</h3>
+
+        <div style="overflow-y: auto; max-height: 450px;">
+            @foreach (var checklist in checklistItems)
+            {
+                <WorkflowItem ChecklistModel="@checklist"
+                              OnToggleDescription="@(async show => await ToggleDescription(show, checklist.Index))"
+                              IsStatusVisible="false">
+                </WorkflowItem>
+            }
+
+            <div class="d-flex justify-content-end align-items-center mt-3" style="margin-bottom: 10px; margin-right: 10px;">
+                @if (showRemoveButton)
+                {
+                    <div class="form-group" style=" margin-right: 8px;">
+
+                        <button type="button" class="btn btn-danger btn-sm" style="width: 30px; height: 30px;" @onclick="RemoveLastItem">-</button>
+                    </div>
+                }
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary btn-sm" style="width: 30px; height: 30px;" @onclick="AddCheckListItem">+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private List<CompanyModel> companies;
+
+    private TaskModel newTask = new TaskModel();
+
+    private List<ChecklistModel> checklistItems = new List<ChecklistModel>();
+    private List<AttachmentModel> attachmentItems = new List<AttachmentModel>();
+
+    private bool showRemoveButton = false;
+    public NewTask()
+    {
+        newTask = new TaskModel
+            {
+                Description = newTask.Description,
+                Orderer = newTask.Orderer,
+                Solver = newTask.Solver,
+                Priority = newTask.Priority,
+                Deadline = newTask.Deadline,
+                DoneAt = null,
+                Status = Status.Waiting,
+                State = 1
+            };
+    }
+
+    private async Task HandleFileChange(InputFileChangeEventArgs e)
+    {
+        attachmentItems.Clear();
+        foreach (var file in e.GetMultipleFiles())
+        {
+            using var memoryStream = new MemoryStream();
+            await file.OpenReadStream().CopyToAsync(memoryStream);
+
+            attachmentItems.Add(new AttachmentModel
+                {
+                    FileName = file.Name,
+                    Data = memoryStream.ToArray(),
+                    State = 1
+                });
+        }
+    }
+    //[Inject]
+    //private AuthenticationStateProvider AuthenticationStateProvider { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        //var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userName = "Pavel";//authenticationState.User.Identity?.Name;
+
+        newTask.Orderer = userName;
+        newTask.Priority = Priority.High;
+        newTask.Deadline = DateTime.Today.AddDays(1).AddSeconds(-1);
+
+        AddCheckListItem();
+        await GetCompaniesAsync();
+    }
+    private async Task GetCompaniesAsync()
+    {
+        companies = await Http.GetFromJsonAsync<List<CompanyModel>>("Company/getCompanies");
+        newTask.Company = companies.FirstOrDefault().Name;
+    }
+
+    private async Task AddTask()
+    {
+        var nonEmptyChecklistItems = checklistItems.Where(item => !string.IsNullOrEmpty(item.StepName)).ToList();
+        newTask.Checklist = nonEmptyChecklistItems.Any() ? nonEmptyChecklistItems : null;
+        newTask.Attachments = attachmentItems != null ? attachmentItems : null;
+        newTask.PublishedAt = DateTime.Now;
+
+        newTask.Deadline = newTask.Deadline == null ? DateTime.Today.AddDays(1).AddSeconds(-1) : newTask.Deadline.Value.AddDays(1).AddSeconds(-1);
+        if(newTask.Checklist != null)
+        {
+            foreach (var item in newTask.Checklist)
+            {
+                if (item.Deadline.HasValue)
+                {
+                    item.Deadline = ((DateTime)item.Deadline).Date.AddDays(1).AddSeconds(-1);
+                }
+                item.Deadline = item.Deadline ?? DateTime.Today.AddDays(1).AddSeconds(-1);
+            }
+        }
+
+        await Http.PostAsJsonAsync("Task/createTask", newTask);
+        NavigationManager.NavigateTo("/servicedesk");
+    }
+    int index = 1;
+
+
+
+    private async void AddCheckListItem()
+    {
+        var newIndex = checklistItems.Count();
+        checklistItems.Add(new ChecklistModel
+            {
+                Index = newIndex,
+                Priority = Priority.High,
+                Deadline = DateTime.Today.AddDays(1).AddSeconds(-1),
+                Status = Status.Waiting,
+                DoneAt = null
+            });
+        showRemoveButton = true;
+    }
+    private void RemoveLastItem()
+    {
+        if (checklistItems.Count > 0)
+        {
+            if (checklistItems != null)
+            {
+                checklistItems.RemoveAt(checklistItems.Count - 1);
+                index--;
+
+                showRemoveButton = checklistItems.Count > 1;
+            }
+        }
+    }
+    private async Task ToggleDescription(bool show, int index)
+    {
+        if (checklistItems != null)
+        {
+            checklistItems[index].ShowDescription = show;
+
+            StateHasChanged();
+        }
+    }
+}

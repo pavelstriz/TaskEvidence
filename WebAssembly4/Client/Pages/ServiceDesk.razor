@@ -1,0 +1,272 @@
+﻿@page "/servicedesk"
+@using TaskEvidence.Shared.Helpers.ExtensionMethods.Generics;
+@using TaskEvidence.Shared.Helpers.ExtensionMethods.Strings;
+@using TaskEvidence.Helpers
+@using TaskEvidence.Models
+@using TaskEvidence.Shared
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Service Desk</PageTitle>
+
+<h2>Seznam úkolů</h2>
+<br />
+<div class="d-flex justify-content-sm-end align-items-center">
+    <div style="margin-right: 10px;">
+        <select class="form-select form-select-sm select" @onchange="FilterComprehensive">
+            <option value="all">All</option>
+            <option value="notDone">All !Done</option>
+            <option value="notDoneAfterDeadline">All !Done po termínu</option>
+            <option value="notDoneWithChecklistAfterDeadline">Any !Done z Checklistu </option>
+        </select>
+    </div>
+    <div style="margin-right: 10px;">
+        <select class="form-select form-select-sm select" @onchange="@FilterPersonType">
+            <option value="orderer">Zadavatel</option>
+            <option value="solver">Řešitel</option>
+        </select>
+    </div>
+    <div>
+        <input type="text" @oninput="FilterPerson" class="form-control form-control-sm" style="width: 80%;" placeholder="Zadavatel / Řešitel" />
+    </div>
+    <div style="margin-left: 165px;margin-right: 10px;">
+        <button class="@DeleteButtonClass" @onclick="SendToArchive">@DeleteButton</button>
+    </div>
+    <div style="margin-right: 10px;">
+        <button class="btn btn-primary btn-sm" @onclick="NewTask">Nový úkol</button>
+    </div>
+</div>
+<hr />
+@if (taskList == null)
+{
+    <p><em>Načítání...</em></p>
+}
+else
+{
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th width="2%">Id</th>
+                <th width="3%">Vytvořeno</th>
+                <th width="10%">Společnost</th>
+                <th width="33%">Požadavek</th>
+                <th width="14%">Zadavatel</th>
+                <th width="16%">Řešitel</th>
+                <th width="3%">Priorita</th>
+                <th width="1%">Termín</th>
+                <th width="3%">Stav</th>
+                <th width="8%"></th> <!--Checklist count-->
+                <th width="3%"></th> <!--Comment-->
+                <th width="3%"></th> <!--Attachment-->
+                <th width="5%"></th> <!--Detail button-->
+                @if (showSelectionColumn)
+                {
+                    <th><input type="checkbox" style="transform: scale(2);" @onchange="ToggleAllCheckboxes" /></th> <!-- New column -->
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var task in filteredTaskList)
+            {
+                <tr @onclick="() => HighlightRow(task.Id)" class="@((selectedTaskId == task.Id) ? "active-row" : "")">
+                    <td>@task.Id</td>
+                    <td>@task.PublishedAt.GetValueOrDefault()</td>
+                    <td>@task.Company</td>
+                    <td>@task.Description</td><!--.Shorten(30)" -->
+                    <td>@task.Orderer</td>
+                    <td>@task.Solver</td><!--class="column-no-wrap -->
+                    <td>@task.Priority.ToString()</td>
+                    <td>@task.Deadline.GetValueOrDefault().ToShortDateString()</td>
+                    @if (!isStatusEditation)
+                    {
+                        <td>@task.Status.ToString()</td>
+                    }
+                    else
+                    {
+                        <td>
+                            <select class="form-select form-select-sm select" @bind="task.Status">
+                                @foreach (var status in Enum.GetValues(typeof(Status)))
+                                {
+                                    <option value="@status">@status.ToString()</option>
+                                }
+                            </select>
+                        </td>
+                    }
+                    <td><img src="icons/ChecklistIcon.png" width="25" height="25" title="Počet položek v checklistu: @task.Checklist.Count()" />@task.Checklist.Count()</td>
+
+                    <td>
+                    @if (task.Messages.Count() > 0)
+                     {
+                        <img src="icons/MessageIcon.png" width="20" height="20" title="Úkol obsahuje komentář" />
+                     }
+                    </td>
+                    <td>
+                        @if (task.Attachments.Count() > 0)
+                        {
+                            <img src="icons/AttachmentIcon.png" width="20" height="20" title="Úkol obsahuje přílohu: @task.Attachments.Count()" />
+                        }
+                    </td>
+
+                    <td><button class="btn btn-primary btn-sm" @onclick="() => HandleButtonClick(task.Id)">Detail</button></td>
+                    
+                    @if (showSelectionColumn)
+                    {
+                        <td><input type="checkbox" style="transform: scale(2);" @bind="task.IsChecked" /></td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<TaskModel> taskList = new List<TaskModel>();
+    private List<TaskModel> filteredTaskList = new List<TaskModel>();
+    private List<TaskModel> selectedTasks = new List<TaskModel>();
+
+    private bool showSelectionColumn = false;
+    private bool isStatusEditation = false;
+    private int selectedTaskId = -1;
+
+    private string selectedFilter = "All";
+    private string selectedPersonType = "orderer";
+    private string selectedFilterPerson = String.Empty;
+
+    private string DeleteButton;
+    private string DeleteButtonClass;
+
+    protected override async Task OnInitializedAsync()
+    {
+        DeleteButton = "Smazat";
+        DeleteButtonClass = "btn btn-danger btn-sm";
+        taskList = await Http.GetFromJsonAsync<List<TaskModel>>("Task/getTasks");
+        filteredTaskList = taskList;
+        StateHasChanged();
+    }
+    private async Task NewTask(MouseEventArgs e)
+    {
+        NavigationManager.NavigateTo("/newtask");
+    }
+    private async Task EditStatus(MouseEventArgs e)
+    {
+        isStatusEditation = !isStatusEditation;
+    }
+
+    private void FilterTasks()
+    {
+        switch (selectedFilter)
+        {
+            case "notDone":
+                filteredTaskList = taskList
+                    .Where(task => task.Status != Status.Done).ToList();
+                break;
+            case "notDoneAfterDeadline":
+                filteredTaskList = taskList
+                    .Where(task => task.Status != Status.Done && task.Deadline < DateTime.Now).ToList();
+                break;
+            case "notDoneWithChecklistAfterDeadline":
+                filteredTaskList = taskList
+                    .Where(task => task.Checklist
+                    .Any(ch => ch.Status != Status.Done && ch.Deadline < DateTime.Now)).ToList();
+                break;
+            default:
+                filteredTaskList = taskList;
+                break;
+        }
+
+        if (!String.IsNullOrEmpty(selectedFilterPerson))
+        {
+            filteredTaskList = filteredTaskList
+            .Where(task => (selectedPersonType == "orderer" && task.Orderer.ToLower().Contains(selectedFilterPerson))
+                        || (selectedPersonType == "solver" && task.Solver.ToLower().Contains(selectedFilterPerson)))
+            .ToList();
+        }
+        StateHasChanged();
+    }
+    private void FilterComprehensive(ChangeEventArgs e)
+    {
+        selectedFilter = e.Value.ToString();
+        FilterTasks();
+    }
+    private void FilterPersonType(ChangeEventArgs e)
+    {
+        selectedPersonType = e.Value.ToString();
+        FilterTasks();
+    }
+    private void FilterPerson(ChangeEventArgs e)
+    {
+        selectedFilterPerson = e.Value?.ToString().ToLower();
+        FilterTasks();
+    }
+    private void ToggleAllCheckboxes(ChangeEventArgs e)
+    {
+
+        bool isChecked = (bool)e.Value;
+        foreach (var task in filteredTaskList)
+        {
+            task.IsChecked = isChecked;
+        }
+        UpdateSelectedIds();
+    }
+    private void UpdateSelectedIds()
+    {
+        selectedTasks.Clear();
+        foreach (var task in filteredTaskList)
+        {
+            if (task.IsChecked)
+            {
+                selectedTasks.Add(task);
+            }
+            else
+            {
+                selectedTasks.Remove(task);
+            }
+        }
+    }
+
+    private void ToggleNewColumn()
+    {
+        showSelectionColumn = !showSelectionColumn;
+    }
+    int removeButtonClicks = 0;
+    private async Task SendToArchive(MouseEventArgs e)
+    {
+        removeButtonClicks++;
+
+        if (removeButtonClicks % 2 == 0)
+        {
+            if (selectedTasks != null)
+            {
+                UpdateSelectedIds();
+                foreach (var task in selectedTasks)
+                {
+                    task.State = 2;
+                }
+            // selectedTasks.ForEach(t => t.State = 2);
+            await Http.PatchAsJsonAsync<List<TaskModel>>($"Task/sendToArchiveMany", selectedTasks);
+            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+            }
+            DeleteButton = "Smazat";
+            DeleteButtonClass = "btn btn-danger btn-sm";
+        }
+        else
+        {
+            ToggleNewColumn();
+            DeleteButton = "Archivovat";
+            DeleteButtonClass = "btn btn-primary btn-sm";
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task HandleButtonClick(int taskId)
+    {
+        NavigationManager.NavigateTo($"/taskdetails/{taskId}");
+    }
+    private async Task HighlightRow(int id)
+    {
+        selectedTaskId = id;
+        await JSRuntime.InvokeVoidAsync("highlightRow", id);
+    }
+}

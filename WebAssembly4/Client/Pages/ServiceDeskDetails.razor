@@ -1,0 +1,458 @@
+﻿@page "/taskdetails/{Id:int}"
+@using System.Security.Claims
+@using System.Reflection.Metadata
+@using TaskEvidence.Helpers
+@using TaskEvidence.Models
+@using TaskEvidence.Shared.Helpers.ExtensionMethods.Generics
+@using TaskEvidence.Shared.Helpers.ExtensionMethods.Strings
+@using TaskEvidence.Shared.Models
+@using Microsoft.AspNetCore.SignalR.Client
+@using System.IO;
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6" style="width: 30%;height: 60%;">
+            <div class="rounded p-3 border">
+                <div><h4>Detail úkolu: #@currentTask.Id</h4></div>
+                <div>@currentTask.PublishedAt.GetValueOrDefault()</div>
+                <hr />
+                @if (currentTask != null)
+                {
+                    <EditForm id="submitForm" Model="currentTask" OnValidSubmit="ValidFormSubmitted" OnInvalidSubmit="InvalidFormSubmitted">
+                        <DataAnnotationsValidator/>
+                    
+                    <div>
+                        <div style="display: flex; margin-right: 10px; margin-bottom: 5px;">
+                            <div style="align-items: start;">
+                                <strong>Požadavek:</strong>
+                            </div>
+                            <div class="form-group" style=" align-items: center; margin-left: 10px;">
+                                <textarea class="form-control form-control-sm" rows="2" disabled="@isEditDisabled" @bind="currentTask.Description"></textarea>
+                                <ValidationMessage For="@(() => currentTask.Description)" />
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-right: 10px; margin-bottom: 5px;">
+                            <div>
+                                <strong>Zadavatel:</strong>
+                            </div>
+                            <div class="form-group" style="margin-left: 10px;">
+                                <input type="text" class="form-control form-control-sm" disabled="true" @bind="currentTask.Orderer" />
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; margin-right: 10px; margin-bottom: 5px;">
+                            <div>
+                                <strong>Společnost:</strong>
+                            </div>
+                            <div class="form-group" style="margin-left: 10px;">
+                                <select class="form-select form-select-sm select" disabled="@isEditDisabled" @bind="currentTask.Company">
+                                    @if (companies != null)
+                                    {
+                                        @foreach (var company in companies)
+                                        {
+                                            <option value="@company.Name">@company.Name</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; margin-right: 10px; margin-bottom: 5px;">
+                            <div>
+                                <strong>Řešitel:</strong>
+                            </div>
+                            <div class="form-group" style="margin-left: 10px;">
+                                <input type="text" class="form-control form-control-sm" disabled="@isEditDisabled" @bind="currentTask.Solver" />
+                                    <ValidationMessage For="@(() => currentTask.Solver)" />
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; margin-right: 10px; margin-bottom: 5px;">
+                            <div>
+                                <strong>Priorita:</strong>
+                            </div>
+                            <div class="form-group" style="margin-left: 10px;">
+                                <select class="form-select form-select-sm select" disabled="@isEditDisabled" @bind="currentTask.Priority">
+                                    @foreach (var status in Enum.GetValues(typeof(Priority)))
+                                    {
+                                        <option value="@status">@status.ToString()</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; margin-right: 10px; margin-bottom: 5px;">
+                            <div>
+                                <strong>Termín:</strong>
+                            </div>
+                            <div class="form-group" style="margin-left: 10px;">
+                                <input type="date"  class="form-control form-control-sm" min="@DateTime.Now.ToString("yyyy-MM-dd")" disabled="@isEditDisabled" @bind="currentTask.Deadline" />
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; margin-right: 10px; margin-bottom: 5px;">
+                            <div>
+                                <strong>Stav:</strong>
+                            </div>
+                            <div class="form-group" style="margin-left: 10px;">
+                                <select class="form-select form-select-sm select" disabled="@isEditDisabled" @bind="currentTask.Status">
+                                    @foreach (var status in Enum.GetValues(typeof(Status)))
+                                    {
+                                        <option value="@status">@status.ToString()</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    </EditForm>
+                }
+                else
+                {
+                    <p><em>Načítání...</em></p>
+                }
+                <div class="attachment-container" style="border-block:solid; height:120px;">
+                    @foreach (var attachment in currentTask.Attachments)
+                    {
+                        if(attachment.State != 2)
+                        {
+                            <div class="attachment-wrapper">
+                                <div class="attachment-box" @onclick="() => DownloadFileFromBytes(attachment.TaskId)">
+                                    @switch (Path.GetExtension(attachment.FileName).ToLower())
+                                    {
+                                        case ".pdf":
+                                            <img src="icons/PDFIcon.png" alt="PDF" title="Stáhnout soubor" /> <!-- PDF icon -->
+                                            break;
+                                        case ".doc":
+                                        case ".docx":
+                                            <img src="icons/WordIcon.png" alt="Word" title="Stáhnout soubor" /> <!-- Word icon -->
+                                            break;
+                                        case ".xls":
+                                        case ".xlsx":
+                                            <img src="icons/ExcelIcon.png" alt="Excel" title="Stáhnout soubor" /> <!-- Excel icon -->
+                                            break;
+                                        default:
+                                            <img src="icons/DefaultIcon.png" alt="File" title="Stáhnout soubor" /> <!-- Default file icon -->
+                                            break;
+                                    }
+                                </div>
+                                <span class="alt-text" style="font-size:10px">@attachment.FileName.Shorten(17)</span>
+                                @if (!isEditDisabled)
+                                {
+                                    <button class="remove-btn" @onclick="() => RemoveAttachment(attachment)">
+                                        <img src="icons/RemoveIcon.png" width="25" height="25" />
+                                    </button>
+                                }
+                            </div>
+                        }
+                        
+                    }
+                </div>
+                @if(!isEditDisabled)
+                {
+                    <div class="">
+                        <div>
+                            <strong>Změnit soubory:</strong>
+                        </div>
+                        <div class="form-group" style="display: flex; justify-content: space-between;">
+                            <InputFile type="file" class="form-control-file" id="file" name="file" OnChange="@HandleFileChange" multiple />
+                        </div>
+                    </div>
+                }
+                <div class="d-flex justify-content-end align-items-center" style="margin-top:10px">
+                    @if(!isEditDisabled)
+                    {
+                        <button class="btn btn-danger btn-sm" style="margin-right: 10px" @onclick="CancelEdit">Zahodit</button>
+                    }
+                    <button type="submit" form="submitForm" class="btn btn-primary btn-sm" style="margin-right: 10px" @onclick="EditStatus">@EditButton</button>
+                    <button class="@DeleteButtonClass" style="margin-right: 10px" @onclick="SendToArchive">@DeleteButton</button>
+                </div>
+            </div>
+        </div>
+        <div style="width: 3%;"></div>
+        <div class="col-md-6" style="width: 67%;height: 60%;">
+            
+            <div class="square-panel rounded p-3 border">
+                <h4>Checklist</h4>
+                <hr />
+                <div style="overflow-y: auto; max-height: 315px;">
+
+                    @if (currentTask.Checklist != null)
+                    {
+                        int i = 0;
+                        @foreach (var checklistItem in currentTask.Checklist)
+                        {
+
+                            checklistItem.Index = i;
+                            <WorkflowItem 
+                                IsStatusVisible="true"
+                                ChecklistModel="@checklistItem"
+                                IsReadOnly="@isEditDisabled">
+                            </WorkflowItem>
+                            i++;
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-12" style="margin-bottom:10px;">
+            <h4>Chat History</h4>
+            <div class="rounded p-3 border">
+                <div class="container overflow-auto shadow-sm p-3 mb-5 rounded" style="background-color:gainsboro; border-block;height: 450px; width: 75%;">
+                    @foreach (var message in currentTask.Messages)
+                    {
+                        <div class="row mb-3 d-flex @(message.CurrentUser ? "justify-content-end" : "")">
+                            <div class="card" style="width: 20rem;">
+                                <div class="card-header">@(message.CurrentUser ? "You" : message.UserName)</div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        @message.Message
+                                    </p>
+                                </div>
+                                <div class="card-footer">@message.PublishedAt</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="d-flex justify-content-left align-items-center mb-3">
+                    <label for="nameInput">Jméno:</label>
+                    <input type="text" id="nameInput" class="form-control form-control-sm" placeholder="Zadej jméno..." style="width: 15%;"
+                            @bind="userInput" />
+                
+                    <textarea type="text" rows="3" class="form-control form-control-sm" style="margin-left:20px; margin-right:20px; width: 45%;" placeholder="Napiš zprávu..."
+                            @bind-value="messageInput"
+                            @bind-value:event="oninput"
+                            @onkeyup="HandleInput"/>
+                    <button class="btn btn-primary btn-sm ml-3"
+                            @onclick="  Send  "
+                            disabled="@(!isConnected || String.IsNullOrEmpty(messageInput))">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private TaskModel currentTask = new TaskModel();
+    private TaskModel originalTask = new TaskModel();
+
+    //[Inject] 
+    //private AuthenticationStateProvider AuthenticationStateProvider { get; set; }
+
+    private List<CompanyModel> companies = new List<CompanyModel>();
+
+    private bool isEditDisabled = true;
+    private string EditButton;
+    private string DeleteButton;
+    private string DeleteButtonClass;
+
+    private HubConnection? hubConnection;
+    private MessageModel messageModel = new MessageModel();
+    private string userInput = string.Empty;
+    private string messageInput = string.Empty;
+    private bool isUserReadOnly = false;
+
+    public bool isConnected => hubConnection?.State == HubConnectionState.Connected;
+
+
+    private List<AttachmentModel> attachments = new List<AttachmentModel>();
+    private string iconClass = "fas fa-file";
+
+    int removeButtonClicks = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        //var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userName = ""; //authenticationState.User.Identity?.Name;
+
+        originalTask = await Http.GetFromJsonAsync<TaskModel>($"Task/getTask/{Id}");
+        currentTask = originalTask.Clone();
+        currentTask.Attachments = originalTask.Attachments.CloneFile();
+
+        companies = await Http.GetFromJsonAsync<List<CompanyModel>>("Company/getCompanies");
+
+        //userMessages = await Http.GetFromJsonAsync<List<MessageModel>>($"Chat/getChatThread/{Id}");
+
+        //currentTask = await Http.GetFromJsonAsync<AttachmentModel>()
+
+        EditButton = "Upravit";
+        DeleteButton = "Smazat";
+        DeleteButtonClass = "btn btn-danger btn-sm";
+
+        userInput = userName;
+        await ConnectToChat();
+    }
+    private async Task DownloadFileFromBytes(int taskId)
+    {
+        var attachment = currentTask.Attachments.FirstOrDefault(a => a.TaskId == taskId);
+
+        if (attachment != null)
+        {
+            var fileBytes = attachment.Data;
+
+            var base64String = Convert.ToBase64String(fileBytes);
+
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBytes", attachment.FileName, base64String);
+        }
+    }
+    private async Task HandleFileChange(InputFileChangeEventArgs e)
+    {
+        //currentTask.Attachments.Clear();
+        foreach (var attachment in currentTask.Attachments)
+        {
+            attachment.State = 2;
+        }
+        foreach (var file in e.GetMultipleFiles())
+        {
+            using var memoryStream = new MemoryStream();
+            await file.OpenReadStream().CopyToAsync(memoryStream);
+
+            currentTask.Attachments.Add(new AttachmentModel
+                {
+                    FileName = file.Name,
+                    Data = memoryStream.ToArray(),
+                    State = 1
+
+                });
+        }
+    }
+    private async Task RemoveAttachment(AttachmentModel attachment)
+    {
+        attachment.State = 2;
+        StateHasChanged();
+    }
+    private async Task EditStatus(MouseEventArgs e)
+    {
+        isEditDisabled = !isEditDisabled;
+        EditButton = isEditDisabled ? "Upravit" : "Uložit";
+    }
+    private async Task CancelEdit(MouseEventArgs e)
+    {
+        currentTask = originalTask.Clone();
+        currentTask.Attachments = originalTask.Attachments.CloneFile();
+        isEditDisabled = true;
+        EditButton = isEditDisabled ? "Upravit" : "Uložit";
+        StateHasChanged();
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("registerHoverEffect");
+        }
+    }
+    private async void ValidFormSubmitted(EditContext editContext)
+    {
+        if (isEditDisabled)
+        {
+            currentTask.DoneAt = currentTask.Status == Status.Done ? DateTime.Now : null;
+            currentTask.Deadline = currentTask.Deadline == null ? DateTime.Today.AddDays(1).AddSeconds(-1) : ((DateTime)currentTask.Deadline).Date.AddDays(1).AddSeconds(-1);
+
+            foreach (var checklist in currentTask.Checklist)
+            {
+                checklist.DoneAt = checklist.Status == Status.Done ? DateTime.Now : null;
+                if (checklist.Deadline.HasValue)
+                {
+                    checklist.Deadline = ((DateTime)checklist.Deadline).Date.AddDays(1).AddSeconds(-1);
+                }
+                checklist.Deadline = checklist.Deadline ?? DateTime.Today.AddDays(1).AddSeconds(-1);
+            }
+            originalTask = currentTask.Clone();
+            await Http.PatchAsJsonAsync<TaskModel>($"Task/updateTask/{Id}", currentTask);
+            await Http.PutAsJsonAsync<List<AttachmentModel>>($"Task/updateAttachments/{Id}", currentTask.Attachments.ToList());
+        }
+    }
+    private async void InvalidFormSubmitted(EditContext editContext)
+    {
+        isEditDisabled = false;
+        EditButton = "Uložit";
+    }
+    private async Task SendToArchive(MouseEventArgs e)
+    {
+        removeButtonClicks++;
+
+        if (removeButtonClicks % 2 == 0)
+        {
+            currentTask.State = 2;
+            await Http.PatchAsJsonAsync<TaskModel>($"Task/sendToArchive/{Id}", currentTask);
+            DeleteButton = "Smazat";
+            DeleteButtonClass = "btn btn-danger btn-sm";
+            NavigationManager.NavigateTo("/servicedesk");
+        }
+        else
+        {
+            DeleteButton = "Archivovat";
+            DeleteButtonClass = "btn btn-primary btn-sm";
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ConnectToChat()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri($"/chathub?username={messageModel.UserName}"))
+            .Build();
+
+        hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+        {
+            messageModel = new MessageModel
+            {
+                UserName = user,
+                Message = message,
+                CurrentUser = user == userInput,
+                PublishedAt = DateTime.Now,
+                TaskId = Id
+            };
+            currentTask.Messages.Add(messageModel);
+            StateHasChanged();
+        });
+        await hubConnection.StartAsync();
+    }
+
+    private async Task Send()
+    {
+        if (hubConnection != null)
+        {
+            messageModel = new MessageModel
+                {
+                    UserName = userInput,
+                    Message = messageInput,
+                    TaskId = Id,
+                    PublishedAt = DateTime.Now
+                };
+
+            await Http.PostAsJsonAsync("Chat/postMessage", messageModel);
+            await hubConnection.SendAsync("SendMessageToChat", userInput, messageInput);
+            isUserReadOnly = true;
+            messageInput = string.Empty;
+        }
+    }
+
+    private async Task HandleInput(KeyboardEventArgs args)
+    {
+        if (args.Key.Equals("Enter"))
+        {
+            await Send();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection != null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+    
+}

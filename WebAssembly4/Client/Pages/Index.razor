@@ -1,0 +1,108 @@
+﻿@page "/"
+@using TaskEvidence.Shared.Models
+@inject NavigationManager NavigationManager
+
+<PageTitle>SignalR Chat</PageTitle>
+<h3>SignalR Chat</h3>
+
+<!--   <div class="container overflow-auto shadow-sm p-3 mb-5 bg-white rounded" style="height:500px;">
+
+@foreach (var message in userMessages)
+{
+       <div class="row mb-3 d-flex @(message.CurrentUser ? "justify-content-end" : "")">
+           <div class="card" style="width: 18rem;">
+               <div class="card-header">@(message.CurrentUser ? "You" : message.UserName)</div>
+                   <div class="card-body">
+                       <p class="card-text">
+                @message.Message
+                       </p>
+                   </div>
+               <div class="card-footer">@message.PublishedAt</div>
+            </div>
+       </div>
+}
+
+   </div>
+
+   <div class="input-group">
+   <input @bind="userInput" class="form-control" placeholder="What's your name?">
+       <button class="btn btn-primary form-control-append" disabled="@IsConnected" @onclick="Connect">
+           Connect
+       </button>
+   </div>
+   <div class="input-group">
+   <input @bind-value="messageInput"
+@bind-value:event="oninput"
+@onkeyup="HandleInput"
+              class="form-control">
+       <button class="btn btn-primary form-group-append"
+@onclick="Send"
+               disabled="@(!IsConnected)">
+           Send
+       </button>
+  </div>-->
+@code {
+    /*private HubConnection? hubConnection;
+    private string messages = string.Empty;
+    private string username = string.Empty;
+    private DateTime? SendAt = null;
+    ElementReference TextAreaRef;
+
+
+    private MessageModel messageModel = new MessageModel();
+    private List<MessageModel> userMessages = new();
+    private string userInput = string.Empty;
+    private string messageInput = string.Empty;
+    private bool isUserReadOnly = false;
+
+    public bool IsConnected => hubConnection?.State == HubConnectionState.Connected;
+
+
+    private async Task Connect()
+        {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri($"/chathub?username={messageModel.UserName}"))
+        .Build();
+
+        hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+            {
+            userMessages.Add(new MessageModel {
+                    UserName = user,
+                    Message = message,
+                    CurrentUser = user == userInput,
+                    PublishedAt = DateTime.Now
+            });
+
+        StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task Send()
+        {
+        if (hubConnection != null)
+            {
+            await hubConnection.SendAsync("SendMessageToChat", userInput, messageInput);
+            isUserReadOnly = true;
+            messageInput = string.Empty;
+    }
+    }
+
+    private async Task HandleInput(KeyboardEventArgs args)
+        {
+        if (args.Key.Equals("Enter"))
+            {
+        await Send();
+    }
+    }
+
+
+    public async ValueTask DisposeAsync()
+        {
+        if (hubConnection != null)
+            {
+            await hubConnection.DisposeAsync();
+    }
+    }*/
+}
