@@ -5,16 +5,16 @@ Systém pro evidenci úkolů
 
 ### Požadavky
 
-Visual Studio 2022
+Visual Studio 2022<br>
 SQLEXPRESS (SQL Server 11.0.6020)
 
 ### Instalace
 
-Nuget-Packages:
-Microsoft.AspNetCore.Authentication.Negotiate v7.0.2
-Microsoft.AspNetCore.Components.WebAssembly.Server v7.0.2
-Microsoft.EntityFrameworkCore v7.0.16
-Microsoft.EntityFrameworkCore.SqlServer v7.0.16
+Nuget-Packages:<br>
+Microsoft.AspNetCore.Authentication.Negotiate v7.0.2<br>
+Microsoft.AspNetCore.Components.WebAssembly.Server v7.0.2<br>
+Microsoft.EntityFrameworkCore v7.0.16<br>
+Microsoft.EntityFrameworkCore.SqlServer v7.0.16<br>
 Microsoft.EntityFrameworkCore.Tools v7.0.16
 
 Otevřít soubor appsettings.json a změnit connectionstring dle vlastní databáze
@@ -27,11 +27,11 @@ Otevřít Package Manager
 Pomocí příkazu:
 update-database se nahraje celá databáze přes FluentAPI konfiguraci, včetně simulovaných dat.
 
-Měla by obsahovat tabulky:
-dbo.Companies
-dbo.TaskAttachments (bez dat)
-dbo.TaskChecklist
-dbo.TaskMessages
+Měla by obsahovat tabulky:<br>
+dbo.Companies<br>
+dbo.TaskAttachments (bez dat)<br>
+dbo.TaskChecklist<br>
+dbo.TaskMessages<br>
 dbo.Tasks
 
 Příkazy pro obnovení:
@@ -48,7 +48,7 @@ Po spuštění aplikace je vlevo záložka pro zobrazení všech úkolů.
 
 Stránky:
 
-Hlavní náhled (ServiceDesk):
+Hlavní náhled (ServiceDesk):<br>
 Zobrazení všech úkolů a počtu položek checklistu.
 Zobrazení ikony komentáře (pokud je v úkolu nějaká uživatelská zpráva)
 Filtrování dat podle pohledů, jména zadavatele, a nebo řešitele
@@ -56,14 +56,14 @@ Přidání nového úkolu
 Hromadná archivace v hlavním náhledu pomocí tlačíka Smazat (lze vybrat jednotlivě nebo hromadně, zaškrtnutím header checkboxu) -> Archivovat
 
 
-Stránka Nový úkol:
+Stránka Nový úkol:<br>
 Možnost vytvoření nového úkolu.
 Možnost přidání přílohy
 Možnost přidání/mazání bodů checklistu (defaultně je vždy 1)
 Pokud jakákoliv položka (item) checklistu neobsahuje text v prvním poli - systém ho vynechá po kliknutí tlačítka Uložit
 
 
-Stránka Detail:
+Stránka Detail:<br>
 Lze upravit jednotlivá data z úkolu i checklistu (kromě názvu zadavatele).
 Lze nastavit status jednotlivých položek (po vytvoření vždy status Waiting)
 Nelze mazat již vytvořené položky v checklistu
