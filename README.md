@@ -19,12 +19,12 @@ Microsoft.EntityFrameworkCore.Tools v7.0.16
 
 Otevřít soubor appsettings.json a změnit connectionstring dle vlastní databáze
 
-V souboru NewTask.razor v metodě OnInitializedAsync()
+V souboru NewTask.razor v metodě OnInitializedAsync()<br>
 nastavit var userName na testovací jméno (využívá se pouze zde) - Defaultně: Pavel
 
 
-Otevřít Package Manager
-Pomocí příkazu:
+Otevřít Package Manager<br>
+Pomocí příkazu:<br>
 update-database se nahraje celá databáze přes FluentAPI konfiguraci, včetně simulovaných dat.
 
 Měla by obsahovat tabulky:<br>
@@ -64,26 +64,26 @@ Pokud jakákoliv položka (item) checklistu neobsahuje text v prvním poli - sys
 
 
 Stránka Detail:<br>
-Lze upravit jednotlivá data z úkolu i checklistu (kromě názvu zadavatele).
-Lze nastavit status jednotlivých položek (po vytvoření vždy status Waiting)
-Nelze mazat již vytvořené položky v checklistu
-Lze stáhnout attachment (odzkoušeno .xlsx, .docx)
-Lze přidávat i mazat attachmenty:
-	mazání - v edit modu, po nastavení kurzoru na soubor - funkční (attachment.State = 2)
-	přepsání attachmentu - vybráním nových souborů - částečně funkční (nedořešeno -> staré soubory zůstávají v db se State = 1, nové jsou přidány)
+Lze upravit jednotlivá data z úkolu i checklistu (kromě názvu zadavatele).<br>
+Lze nastavit status jednotlivých položek (po vytvoření vždy status Waiting)<br>
+Nelze mazat již vytvořené položky v checklistu<br>
+Lze stáhnout attachment (odzkoušeno .xlsx, .docx)<br>
+Lze přidávat i mazat attachmenty:<br>
+	&nbsp mazání - v edit modu, po nastavení kurzoru na soubor - funkční (attachment.State = 2)<br>
+	&nbsp přepsání attachmentu - vybráním nových souborů - částečně funkční (nedořešeno -> staré soubory zůstávají v db se State = 1, nové jsou přidány)
 
 Realtime chat - jednorázová možnost zvolení jména pro testování. (Pro simulaci chatu je potřeba duplikovat okno a zvolit jiné jméno.
 
-Textové pole v Detailu i Novém úkolu mají nastavená pravidla validace pomocí atributů:
+Textové pole v Detailu i Novém úkolu mají nastavená pravidla validace pomocí atributů:<br>
 Required a Max počet znaků - Požadavek (100), Řešitel (50)
 
 
-Poznámka:
+Poznámka:<br>
 Po archivaci jsou úkoly nastaveny na State = 2 - pro znovu zobrazení je potřeba manuálně nastavit v databazi State = 1
 
-Návrh na zlepšení
-Přidat unit testy
-Přidat register/login
-Přidat atribut pro validaci textového pole do workflowitem.razor + .cs
-Dodělání attachment featury
+Návrh na zlepšení:<br>
+Přidat unit testy<br>
+Přidat register/login<br>
+Přidat atribut pro validaci textového pole do workflowitem.razor + .cs<br>
+Dodělání attachment featury<br>
 Možnost filtrovat A-z z-A v hlavním náhledu
