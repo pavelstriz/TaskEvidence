@@ -49,17 +49,17 @@ Po spuštění aplikace je vlevo záložka pro zobrazení všech úkolů.
 Stránky:
 
 Hlavní náhled (ServiceDesk):<br>
-Zobrazení všech úkolů a počtu položek checklistu.
-Zobrazení ikony komentáře (pokud je v úkolu nějaká uživatelská zpráva)
-Filtrování dat podle pohledů, jména zadavatele, a nebo řešitele
-Přidání nového úkolu
+Zobrazení všech úkolů a počtu položek checklistu.<br>
+Zobrazení ikony komentáře (pokud je v úkolu nějaká uživatelská zpráva)<br>
+Filtrování dat podle pohledů, jména zadavatele, a nebo řešitele<br>
+Přidání nového úkolu<br>
 Hromadná archivace v hlavním náhledu pomocí tlačíka Smazat (lze vybrat jednotlivě nebo hromadně, zaškrtnutím header checkboxu) -> Archivovat
 
 
 Stránka Nový úkol:<br>
-Možnost vytvoření nového úkolu.
-Možnost přidání přílohy
-Možnost přidání/mazání bodů checklistu (defaultně je vždy 1)
+Možnost vytvoření nového úkolu.<br>
+Možnost přidání přílohy<br>
+Možnost přidání/mazání bodů checklistu (defaultně je vždy 1)<br>
 Pokud jakákoliv položka (item) checklistu neobsahuje text v prvním poli - systém ho vynechá po kliknutí tlačítka Uložit
 
 
