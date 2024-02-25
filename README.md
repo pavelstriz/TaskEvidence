@@ -69,9 +69,9 @@ Lze nastavit status jednotlivých položek (po vytvoření vždy status Waiting)
 Nelze mazat již vytvořené položky v checklistu<br>
 Lze stáhnout attachment (odzkoušeno .xlsx, .docx)<br>
 Lze přidávat i mazat attachmenty:<br>
-	&nbsp mazání - v edit modu, po nastavení kurzoru na soubor - funkční (attachment.State = 2)<br>
-	&nbsp přepsání attachmentu - vybráním nových souborů - částečně funkční (nedořešeno -> staré soubory zůstávají v db se State = 1, nové jsou přidány)
-Realtime chat - jednorázová možnost zvolení jména pro testování. (Pro simulaci chatu je potřeba duplikovat okno a zvolit jiné jméno.
+	&nbsp; mazání - v edit modu, po nastavení kurzoru na soubor - funkční (attachment.State = 2)<br>
+	&nbsp; přepsání attachmentu - vybráním nových souborů - částečně funkční (nedořešeno -> staré soubory zůstávají v db se State = 1, nové jsou přidány)<br>
+Realtime chat - jednorázová možnost zvolení jména pro testování. (Pro simulaci chatu je potřeba duplikovat okno a zvolit jiné jméno.<br>
 Textové pole v Detailu i Novém úkolu mají nastavená pravidla validace pomocí atributů:<br>
 Required a Max počet znaků - Požadavek (100), Řešitel (50)
 
